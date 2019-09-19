@@ -9,6 +9,8 @@ class S3
     private $endpoint;
     private $region;
 
+    private $useHttps = false;
+
     const ACL_PRIVATE = 'private';
     const ACL_PUBLIC_READ = 'public-read';
     const ACL_PUBLIC_READ_WRITE = 'public-read-write';
@@ -149,7 +151,7 @@ class S3
             $this->resource = $this->uri;
         }
 
-        $url = 'https://' . ($this->headers['Host'] !== '' ? $this->headers['Host'] : $this->endpoint) . $this->uri;
+        $url =  ($this->useHttps ? 'https://' : 'http://' ) . ($this->headers['Host'] !== '' ? $this->headers['Host'] : $this->endpoint) . $this->uri;
 
         // Basic setup
         $curl = curl_init();
