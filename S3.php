@@ -78,9 +78,9 @@ class S3
 
         $this->bucket = $opts['Bucket'];
         $this->saveAs = null;
-        if($opts['SaveAs']) {
-            if(!is_resource($opts['SaveAs'])) {
-                if(($this->fp = fopen($opts['SaveAs'], 'wb')) === false) {
+        if ($opts['SaveAs']) {
+            if (!is_resource($opts['SaveAs'])) {
+                if (($this->fp = fopen($opts['SaveAs'], 'wb')) === false) {
                     // todo: error
                 }
             } else {
@@ -128,7 +128,6 @@ class S3
     private $file;
     private $size;
     private $fp = false;
-    private $resource;
 
     private $response;
 
@@ -143,15 +142,9 @@ class S3
 
         $this->uri = $uri !== '' ? '/' . str_replace('%2F', '/', rawurlencode($uri)) : '/';
 
-        if ($this->bucket !== '') {
-            $this->headers['Host'] = $this->bucket . '.' . $this->endpoint;
-            $this->resource = '/' . $this->bucket . $this->uri;
-        } else {
-            $this->headers['Host'] = $this->endpoint;
-            $this->resource = $this->uri;
-        }
+        $this->headers['Host'] = (empty($this->bucket)) ? $this->endpoint : $this->bucket . '.' . $this->endpoint;
 
-        $url =  ($this->useHttps ? 'https://' : 'http://' ) . ($this->headers['Host'] !== '' ? $this->headers['Host'] : $this->endpoint) . $this->uri;
+        $url = ($this->useHttps ? 'https://' : 'http://') . ($this->headers['Host'] !== '' ? $this->headers['Host'] : $this->endpoint) . $this->uri;
 
         // Basic setup
         $curl = curl_init();
@@ -164,7 +157,7 @@ class S3
 
         $this->headers['x-amz-date'] = gmdate('Ymd\THis\Z');
 
-        if(!isset($this->headers['x-amz-content-sha256'])) {
+        if (!isset($this->headers['x-amz-content-sha256'])) {
             $this->headers['x-amz-content-sha256'] = ($this->file)
                 ? hash_file('sha256', $this->file)
                 : hash('sha256', $this->data);
@@ -183,7 +176,7 @@ class S3
         curl_setopt($curl, CURLOPT_WRITEFUNCTION, [&$this, '__responseWriteCallback']);
         curl_setopt($curl, CURLOPT_HEADERFUNCTION, [&$this, '__responseHeaderCallback']);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT , 2);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
 
         switch ($method) {
             case 'GET':
@@ -212,27 +205,33 @@ class S3
         }
 
         if (curl_exec($curl)) {
-            $content_type = curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
 
-            if ($this->response['code'] > 300 && strpos($content_type, 'application/xml') !== false) {
-                $response = simplexml_load_string($this->response['body']);
-                if ($response) {
-                    $error = array(
+            if (!in_array($this->response['code'], [200, 204, 206])) {
+                if (
+                    isset($this->response['headers']['content-type']) &&
+                    strpos($this->response['headers']['content-type'], 'application/xml') !== false &&
+                    ($response = simplexml_load_string($this->response['body'])) != false) {
+
+                    $error = [
                         'code' => (string)$response->Code,
                         'message' => (string)$response->Message,
-                    );
+                    ];
                     if (isset($response->Resource)) {
                         $error['resource'] = (string)$response->Resource;
                     }
-                    $this->response['error'] = $error;
+                    unset($this->response['body']);
+                } else {
+                    $error = [
+                        'code' => $this->response['code'],
+                        'message' => ''
+                    ];
                 }
-                unset($this->response['body']);
+                $this->response['error'] = $error;
             }
         } else {
             $this->response['error'] = [
                 'code' => curl_errno($curl),
-                'message' => curl_error($curl),
-                'resource' => $this->resource
+                'message' => curl_error($curl)
             ];
         }
 
@@ -299,9 +298,7 @@ class S3
      */
     private function __responseWriteCallback(&$curl, &$data)
     {
-        $this->response['code'] = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-
-        if (in_array($this->response['code'], array(200, 206)) && $this->fp !== false)
+        if (in_array($this->response['code'], [200, 206]) && $this->fp !== false)
             return fwrite($this->fp, $data);
         else
             $this->response['body'] .= $data;
@@ -320,11 +317,12 @@ class S3
     private function __responseHeaderCallback($curl, $data)
     {
         $headers = explode(':', $data);
-        if(count($headers) == 2) {
+        if (count($headers) === 2) {
             list($key, $value) = $headers;
-            $this->response['headers'][$key] = trim($value);
+            $this->response['headers'][strtolower($key)] = trim($value);
+        } elseif (count($headers) === 1 && substr($data, 0, 4) === 'HTTP') {
+            $this->response['code'] = (int)substr($data, 9, 3);
         }
         return strlen($data);
     }
 }
-
