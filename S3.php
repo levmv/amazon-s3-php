@@ -6,7 +6,7 @@ class S3
 {
     private $access_key;
     private $secret_key;
-    private $endpoint;
+    private $endpoint = 's3.amazonaws.com';
     private $region;
 
     private $useHttps = false;
@@ -23,11 +23,12 @@ class S3
     const STORAGE_CLASS_NEARLINE = 'NEARLINE';
 
 
-    public function __construct($access_key, $secret_key, $endpoint = 's3.amazonaws.com', $region = 'us-east-1')
+    public function __construct($access_key, $secret_key, $endpoint = null, $region = 'us-east-1')
     {
         $this->access_key = $access_key;
         $this->secret_key = $secret_key;
-        $this->endpoint = $endpoint;
+        if($endpoint)
+            $this->endpoint = $endpoint;
         $this->region = $region;
     }
 
