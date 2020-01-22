@@ -158,11 +158,9 @@ class S3
 
         $this->headers['x-amz-date'] = gmdate('Ymd\THis\Z');
 
-        if (!isset($this->headers['x-amz-content-sha256'])) {
-            $this->headers['x-amz-content-sha256'] = ($this->file)
-                ? hash_file('sha256', $this->file)
-                : hash('sha256', $this->data);
-        }
+        $this->headers['x-amz-content-sha256'] = ($this->file)
+            ? hash_file('sha256', $this->file)
+            : hash('sha256', $this->data);
 
         array_filter($this->headers);
 
