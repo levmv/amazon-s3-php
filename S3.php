@@ -11,6 +11,8 @@ class S3
 
     private $useHttps = false;
 
+    private $timeout = 5;
+
     const ACL_PRIVATE = 'private';
     const ACL_PUBLIC_READ = 'public-read';
     const ACL_PUBLIC_READ_WRITE = 'public-read-write';
@@ -175,7 +177,7 @@ class S3
         curl_setopt($curl, CURLOPT_WRITEFUNCTION, [&$this, '__responseWriteCallback']);
         curl_setopt($curl, CURLOPT_HEADERFUNCTION, [&$this, '__responseHeaderCallback']);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 2);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->timeout);
 
         switch ($method) {
             case 'GET':
