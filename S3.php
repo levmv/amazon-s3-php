@@ -53,7 +53,7 @@ class S3
 
             $this->file = $opts['SourceFile'];
             clearstatcache(false, $this->file);
-
+            $this->fp = fopen($this->file, 'rb');
             $this->size = filesize($this->file);
         } else {
             $this->data = $opts['Body'];
