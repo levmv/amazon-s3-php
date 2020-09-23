@@ -11,7 +11,7 @@ class S3
 
     private $useHttps = false;
 
-    private $timeout = 5;
+    private $timeout = 7;
 
     const ACL_PRIVATE = 'private';
     const ACL_PUBLIC_READ = 'public-read';
