@@ -214,7 +214,8 @@ class S3
                 if (
                     isset($this->response['headers']['content-type']) &&
                     strpos($this->response['headers']['content-type'], 'application/xml') !== false &&
-                    ($response = simplexml_load_string($this->response['body'])) != false) {
+                    $this->response['body'] !== null  &&
+                    ($response = simplexml_load_string($this->response['body'])) !== false) {
 
                     $error = [
                         'code' => (string)$response->Code,
