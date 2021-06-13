@@ -29,8 +29,9 @@ class S3
     {
         $this->access_key = $access_key;
         $this->secret_key = $secret_key;
-        if($endpoint)
+        if($endpoint) {
             $this->endpoint = $endpoint;
+        }
         $this->region = $region;
     }
 
@@ -174,8 +175,8 @@ class S3
         curl_setopt($curl, CURLOPT_HTTPHEADER, $httpHeaders);
         curl_setopt($curl, CURLOPT_HEADER, false);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, false);
-        curl_setopt($curl, CURLOPT_WRITEFUNCTION, [&$this, '__responseWriteCallback']);
-        curl_setopt($curl, CURLOPT_HEADERFUNCTION, [&$this, '__responseHeaderCallback']);
+        curl_setopt($curl, CURLOPT_WRITEFUNCTION, [$this, '__responseWriteCallback']);
+        curl_setopt($curl, CURLOPT_HEADERFUNCTION, [$this, '__responseHeaderCallback']);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->timeout);
 
@@ -297,7 +298,7 @@ class S3
      * @param string &$data Data
      * @return integer
      */
-    private function __responseWriteCallback(&$curl, &$data)
+    private function __responseWriteCallback($curl, $data)
     {
         if (in_array($this->response['code'], [200, 206]) && $this->fp !== false)
             return fwrite($this->fp, $data);
