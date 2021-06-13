@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace levmorozov\s3;
 
@@ -11,7 +11,7 @@ class S3
 
     private $useHttps = false;
 
-    private $timeout = 5;
+    private $timeout = 7;
 
     const ACL_PRIVATE = 'private';
     const ACL_PUBLIC_READ = 'public-read';
@@ -30,6 +30,7 @@ class S3
         $this->access_key = $access_key;
         $this->secret_key = $secret_key;
         if($endpoint) {
+            assert(strpos($endpoint, '://') === false);
             $this->endpoint = $endpoint;
         }
         $this->region = $region;
@@ -57,7 +58,7 @@ class S3
             $this->fp = fopen($this->file, 'rb');
             $this->size = filesize($this->file);
         } else {
-            $this->data = $opts['Body'];
+            $this->data = (string) $opts['Body'];
             $this->size = strlen($this->data);
         }
 
@@ -162,21 +163,22 @@ class S3
         $this->headers['x-amz-date'] = gmdate('Ymd\THis\Z');
 
         $this->headers['x-amz-content-sha256'] = ($this->file)
-            ? hash_file('sha256', $this->file)
-            : hash('sha256', $this->data);
+            ? hash_file('sha256', (string) $this->file)
+            : hash('sha256', (string) $this->data);
 
         array_filter($this->headers);
 
-        foreach ($this->headers as $header => $value)
-            if (strlen($value) > 0) $httpHeaders[] = $header . ': ' . $value;
+        foreach ($this->headers as $header => $value) {
+            if ($value !== '') $httpHeaders[] = $header . ': ' . $value;
+        }
 
         $httpHeaders[] = 'Authorization: ' . $this->getSignatureV4($method);
 
         curl_setopt($curl, CURLOPT_HTTPHEADER, $httpHeaders);
         curl_setopt($curl, CURLOPT_HEADER, false);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, false);
-        curl_setopt($curl, CURLOPT_WRITEFUNCTION, [$this, '__responseWriteCallback']);
-        curl_setopt($curl, CURLOPT_HEADERFUNCTION, [$this, '__responseHeaderCallback']);
+        curl_setopt($curl, CURLOPT_WRITEFUNCTION, [$this, 'responseWriteCallback']);
+        curl_setopt($curl, CURLOPT_HEADERFUNCTION, [$this, 'responseHeaderCallback']);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $this->timeout);
 
@@ -212,7 +214,8 @@ class S3
                 if (
                     isset($this->response['headers']['content-type']) &&
                     strpos($this->response['headers']['content-type'], 'application/xml') !== false &&
-                    ($response = simplexml_load_string($this->response['body'])) != false) {
+                    $this->response['body'] !== null  &&
+                    ($response = simplexml_load_string($this->response['body'])) !== false) {
 
                     $error = [
                         'code' => (string)$response->Code,
@@ -298,7 +301,7 @@ class S3
      * @param string &$data Data
      * @return integer
      */
-    private function __responseWriteCallback($curl, $data)
+    private function responseWriteCallback($curl, $data)
     {
         if (in_array($this->response['code'], [200, 206]) && $this->fp !== false)
             return fwrite($this->fp, $data);
@@ -316,7 +319,7 @@ class S3
      * @param string $data Data
      * @return integer
      */
-    private function __responseHeaderCallback($curl, $data)
+    private function responseHeaderCallback($curl, $data)
     {
         $headers = explode(':', $data);
         if (count($headers) === 2) {

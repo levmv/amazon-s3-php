@@ -5,7 +5,8 @@
   "keywords": ["lightweight", "aws", "s3"],
   "minimum-stability": "dev",
   "require": {
-    "php": ">=7.0"
+    "php": ">=7.0",
+    "ext-curl": "*"
   },
   "license": "MIT",
   "authors": [
