@@ -1,5 +1,5 @@
 {
-  "name": "levmorozov/amazon-s3-php",
+  "name": "levmv/amazon-s3-php",
   "description": "A lightweight S3 client",
   "type": "library",
   "keywords": ["lightweight", "aws", "s3"],
