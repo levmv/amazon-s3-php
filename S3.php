@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace levmorozov\s3;
+namespace levmv\s3;
 
 class S3
 {
