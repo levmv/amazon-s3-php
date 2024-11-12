@@ -82,7 +82,7 @@ class S3
         ], $opts);
 
         $this->bucket = $opts['Bucket'];
-        $this->saveAs = null;
+        
         if ($opts['SaveAs']) {
             if (!is_resource($opts['SaveAs'])) {
                 if (($this->fp = fopen($opts['SaveAs'], 'wb')) === false) {
